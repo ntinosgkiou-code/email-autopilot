@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email Autopilot: οδηγός βήμα προς βήμα</title>
+<style>
+  :root { --ink:#1d2433; --muted:#5b6475; --line:#e3e6ec; --bg:#f4f6f9; --blue:#0a66c2; --green:#0f7b4a; --amber:#9a5b00; --red:#b42318; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:17px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width:820px; margin:0 auto; padding:28px 20px 80px; }
+  h1 { font-size:30px; margin:0 0 6px; } h2 { font-size:22px; margin:34px 0 10px; } h3 { font-size:18px; margin:0 0 6px; }
+  .lead { color:var(--muted); font-size:18px; margin:0 0 22px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin:14px 0; }
+  .step { display:flex; gap:16px; } .num { flex:0 0 38px; height:38px; border-radius:50%; background:var(--blue); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .warn { border-left:5px solid var(--amber); background:#fff8eb; } .bad { border-left:5px solid var(--red); background:#fff3f2; } .good { border-left:5px solid var(--green); background:#effaf4; }
+  code { background:#eef1f5; padding:2px 7px; border-radius:6px; font-size:15px; } pre { background:#1d2433; color:#e8ecf3; padding:12px 14px; border-radius:10px; overflow:auto; font-size:14px; white-space:pre-wrap; }
+  ul, ol { padding-left:22px; } li { margin:4px 0; } .small { color:var(--muted); font-size:15px; }
+  table { width:100%; border-collapse:collapse; background:#fff; } td, th { border-bottom:1px solid var(--line); padding:8px 10px; text-align:left; font-size:15px; vertical-align:top; } th { background:#f1f3f7; }
+</style>
+</head>
+<body>
+<main>
+<h1>✉️ Email Autopilot</h1>
+<p class="lead">Ένας βοηθός AI που ψάχνει επιχειρήσεις (από χάρτες και sites) και δημιουργούς με δικό τους brand, και τους στέλνει προσωποποιημένα emails από το δικό σου email. Κάθε εργάσιμη μέρα, μόνος του.</p>
+
+<div class="card warn"><h3>⚠️ Διάβασε πρώτα, 1 λεπτό</h3>
+<ul>
+<li><b>Νόμος.</b> Τα ανεπιθύμητα εμπορικά emails ρυθμίζονται. Στην ΕΕ και στην Ελλάδα (ν. 3471/2006) μπορεί να απαιτείται συγκατάθεση ακόμα και για επαγγελματικές διευθύνσεις. Το πρόγραμμα βάζει υπογραφή με τα στοιχεία σου και σύνδεσμο διαγραφής, και αποκλείει όποιον πει «όχι». <b>Την ευθύνη της αποστολής την έχεις εσύ.</b> Αν δεν είσαι σίγουρος, ρώτα δικηγόρο.</li>
+<li><b>Spam.</b> Ένα καινούργιο email που στέλνει πολλά cold emails καταλήγει στα ανεπιθύμητα. Γι' αυτό ξεκινά με λίγα (τα μισά για 14 μέρες). Μην ανεβάσεις γρήγορα τον αριθμό.</li>
+<li><b>Δεν είναι μαγικό.</b> Τυπικό ποσοστό απάντησης στα cold emails: 2–8%. Το αποτέλεσμα εξαρτάται από την προσφορά σου.</li>
+</ul></div>
+
+<h2>Τι χρειάζεσαι</h2>
+<ul>
+<li>Έναν υπολογιστή Windows (ή Mac) που θα είναι ανοιχτός τις ώρες δουλειάς.</li>
+<li>Συνδρομή <b>Claude Pro</b> (ο «εγκέφαλος») ή Codex.</li>
+<li>Ένα email για αποστολή (Gmail ή email της εταιρείας σου). Καλύτερα στο δικό σου domain.</li>
+</ul>
+
+<h2>Βήμα προς βήμα</h2>
+
+<div class="card step"><div class="num">1</div><div>
+<h3>Άνοιξε τον πίνακα</h3>
+Άνοιξε τον φάκελο και κάνε διπλό κλικ στο <b>START.bat</b>. Αν ρωτήσει για «uv», απάντησε <code>Y</code>. Θα ανοίξει μια σελίδα στον browser. Άφησε ανοιχτό το μαύρο παράθυρο.
+<div class="small">Αν το έχεις εγκαταστήσει με τον installer, ανοίγεις το εικονίδιο «Email Autopilot» από την επιφάνεια εργασίας.</div></div></div>
+
+<div class="card step"><div class="num">2</div><div>
+<h3>Σύνδεση στο Claude</h3>
+Στην Αρχική, στη λίστα «Ετοιμότητα», πάτα <b>Σύνδεση</b> δίπλα στο Claude. Θα ανοίξει νέο παράθυρο και ο browser. Πάτα <b>Authorize</b>. Αν δεν είναι εγκατεστημένο, πάτα <b>Εγκατάσταση</b> πρώτα.</div></div>
+
+<div class="card step"><div class="num">3</div><div>
+<h3>Πες τι πουλάς και ποιους ψάχνεις</h3>
+Καρτέλα <b>Ρυθμίσεις</b>, ενότητες 1–4. Συμπλήρωσε:
+<ul>
+<li>Τι πουλάς, σε ποιον, το αποτέλεσμα για τον πελάτη (με αριθμό), τι ρωτάς στο τέλος.</li>
+<li><b>Ποιους ψάχνεις:</b> είδη επιχειρήσεων (π.χ. «dental clinic») και πόλεις (π.χ. «Thessaloniki Greece»), ή/και δημιουργούς με brand (π.χ. «skincare founder»). Στο «Τι είδους στόχοι» γράψε <code>businesses</code>, <code>creators</code> ή και τα δύο.</li>
+<li>Τον ιδανικό πελάτη με δικά σου λόγια. Ο βοηθός βαθμολογεί κάθε στόχο από 1 έως 10.</li>
+</ul></div></div>
+
+<div class="card step"><div class="num">4</div><div>
+<h3>Ρύθμισε το email αποστολής</h3>
+Ενότητα <b>5</b> των Ρυθμίσεων:
+<ol>
+<li>Βάλε όνομα αποστολέα και το email σου. Για Gmail: διακομιστής <code>smtp.gmail.com</code>, θύρα <code>587</code>.</li>
+<li><b>Κωδικός εφαρμογής (app password):</b> Λογαριασμός Google → Ασφάλεια → Επαλήθευση 2 βημάτων (άνοιξέ την) → Κωδικοί εφαρμογών → δημιούργησε έναν και επικόλλησέ τον στο πεδίο. <b>Δεν είναι ο κανονικός σου κωδικός.</b> Μένει μόνο στον υπολογιστή σου.</li>
+<li><b>Υπογραφή:</b> γράψε όνομα, εταιρεία και ταχυδρομική διεύθυνση. Είναι υποχρεωτικό για κανονική αποστολή.</li>
+<li>Πάτα <b>Αποθήκευση ρυθμίσεων</b> στο τέλος, μετά <b>Στείλε δοκιμαστικό email στον εαυτό σου</b>. Έλεγξε ότι έφτασε (και στο spam).</li>
+</ol></div></div>
+
+<div class="card step"><div class="num">5</div><div>
+<h3>Δοκιμή: δεν στέλνει τίποτα</h3>
+Στην Αρχική πάτα <b>▶ Δοκιμή τώρα</b>. Σε 5–20 λεπτά ο βοηθός βρίσκει πραγματικές επιχειρήσεις, διαβάζει τα sites τους και γράφει τα emails, <b>χωρίς να στείλει</b>. Δες:
+<ul><li>Καρτέλα <b>Επαφές</b>: ποιους βρήκε, βαθμός και αφορμή.</li><li>Καρτέλα <b>Emails</b>: το ακριβές κείμενο που θα έστελνε.</li></ul>
+Δεν σου αρέσει το ύφος; Άλλαξε το «Ύφος emails» στις Ρυθμίσεις και ξαναδοκίμασε.</div></div>
+
+<div class="card step"><div class="num">6</div><div>
+<h3>Ενεργοποίηση</h3>
+Πάτα <b>✅ Ενεργοποίηση κανονικής αποστολής</b> και <b>Καθημερινό πρόγραμμα → Ενεργοποίηση</b>. Από εδώ δουλεύει μόνος του τις εργάσιμες. Εσύ κοιτάς κάθε μέρα την καρτέλα <b>Απαντήσεις</b> και απαντάς προσωπικά σε όσους ενδιαφέρθηκαν.</div></div>
+
+<h2>Μίλα του με δικά σου λόγια</h2>
+<div class="card good">Στην καρτέλα <b>Εντολές</b> γράψε π.χ.:
+<ul>
+<li>«γράψε στο info@onoma.gr για τη νέα μας υπηρεσία, φιλικά»</li>
+<li>«βρες 15 φυσιοθεραπευτές στην Αθήνα με site και email και πρόσθεσέ τους στις επαφές»</li>
+<li>«βρες 10 δημιουργούς με δικό τους skincare brand και γράψε τους για συνεργασία»</li>
+</ul>
+Εκτελούνται με τα ίδια όρια ασφαλείας.</div>
+
+<h2>Τα όρια (ρυθμίζονται από τον πίνακα)</h2>
+<table>
+<tr><th>Τι</th><th>Προεπιλογή</th><th>Μέγιστο</th></tr>
+<tr><td>Emails τη μέρα</td><td>30</td><td>100</td></tr>
+<tr><td>Προθέρμανση</td><td>14 μέρες στα μισά</td><td>ρυθμίζεται</td></tr>
+<tr><td>Παύση ανάμεσα σε emails</td><td>45–120 δευτερόλεπτα (τυχαία)</td><td>ρυθμίζεται</td></tr>
+</table>
+<p class="small">Σταματά μόνος του αν το email αρνηθεί τη σύνδεση ή αν πολλές διευθύνσεις αποτύχουν (bounces). Κουμπί «Παύση» στην Αρχική σταματά τα πάντα αμέσως.</p>
+
+<h2>Αν κάτι δεν πάει καλά</h2>
+<table>
+<tr><th>Πρόβλημα</th><th>Τι κάνεις</th></tr>
+<tr><td>Το δοκιμαστικό email λέει «λάθος κωδικός»</td><td>Χρησιμοποίησε κωδικό εφαρμογής, όχι τον κανονικό κωδικό. Στο Outlook/Microsoft 365 μπορεί ο διαχειριστής να έχει κλείσει το SMTP.</td></tr>
+<tr><td>Βρίσκει λίγες επιχειρήσεις</td><td>Δοκίμασε πιο γενικό είδος, άλλη γραφή της πόλης, ή βάλε κλειδί Google Maps στις Ρυθμίσεις (ενότητα 3).</td></tr>
+<tr><td>Λέει «Σε παύση»</td><td>Διάβασε τον λόγο, διόρθωσέ τον και πάτα «Συνέχεια».</td></tr>
+<tr><td>Το Claude λέει ότι δεν είναι συνδεδεμένο</td><td>Αρχική → «Σύνδεση» στο Claude, Authorize.</td></tr>
+<tr><td>Η σελίδα δεν ανοίγει</td><td>Κλείσε την, κάνε διπλό κλικ στο START.bat ξανά.</td></tr>
+</table>
+</main>
+</body>
+</html>

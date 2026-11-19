@@ -1,0 +1,65 @@
+# =====================================================================
+#  Email Autopilot: the ONLY file you need to edit (or use the dashboard forms).
+#  Easiest way: open this folder in Claude Code or Codex and type:  setup
+#  The assistant interviews you and fills this file in.
+#
+#  Format rules: keep every list on ONE line inside [ ], keep text in "quotes".
+#  Passwords are NOT stored here. The dashboard saves them in data/.secrets/.
+# =====================================================================
+
+profile:
+  name: "Your Name"
+  company: ""                 # your business name, shown in the email footer
+  language: "auto"            # en, el, de, ... or "auto" = each email in the language of the lead's website
+  about_me: "Who you are, what you do, one proof point (clients, results, years)."
+
+offer:
+  what: "What you sell, in one sentence."
+  for_who: "Who it is for."
+  outcome: "The result your customer gets. Use a number if you can."
+  cta: "Open to a quick 15-minute call next week?"
+  link: ""                    # optional. Never sent in a first email, only in replies to interested people.
+  price: ""                   # e.g. "from 99 EUR/month, first month free". Empty = never discuss price.
+  faq: ""                     # short answers to common questions
+
+targeting:                    # who the agent looks for
+  kinds: ["businesses"]       # "businesses" (maps + websites), "creators" (creators/influencers with their own brand), or both
+  businesses: ["dental clinic"]   # what kind of local businesses (used for map searches)
+  locations: ["Thessaloniki, Greece"]
+  creators: []                # niches of creators with a brand, e.g. ["skincare founder", "fitness coach brand"]
+  exclude_keywords: ["franchise", "public hospital", "university"]
+  ideal_customer: "Describe the perfect lead in plain words. The agent scores every business 1-10 against this."
+  min_fit_score: 7            # leads scoring below this are skipped
+
+outreach:
+  enabled: true
+  mode: "dry_run"             # dry_run = writes everything, SENDS NOTHING | live = sends for real
+  followups: 1                # follow-up emails if no reply (0-2)
+  followup_after_days: 5
+  message_style: "Subject under 7 words, no clickbait. Body 60-110 words. Casual. One specific detail from their website. One clear benefit. One question as the call to action. No links."
+
+email:                        # how emails are sent. The password is saved by the dashboard, not here.
+  provider: "smtp"            # smtp (Gmail, Outlook, any mailbox) | resend (Resend.com API key)
+  from_name: ""
+  from_email: ""
+  reply_to: ""                # leave empty to receive replies at from_email
+  smtp_host: "smtp.gmail.com" # Gmail: smtp.gmail.com | Outlook: smtp-mail.outlook.com
+  smtp_port: 587
+  smtp_user: ""               # usually the same as from_email
+  imap_host: ""               # empty = guessed from smtp_host. Used to read replies and bounces.
+  footer: ""                  # REQUIRED for live: your name, company and postal address (EU/UK/US law)
+  unsubscribe_text: "If this is not relevant to you, just reply \"stop\" and I will not write again."
+  allow_freemail: true        # allow @gmail.com style addresses (creators and sole traders use them for business)
+
+limits:                       # safety. Sending too much from a new mailbox lands you in spam.
+  emails_per_day: 30
+  warmup_days: 14             # the first N days of live sending run at HALF the limit
+  min_delay_seconds: 45
+  max_delay_seconds: 120
+  work_hours: "09:00-18:00"
+  work_days: ["Mon", "Tue", "Wed", "Thu", "Fri"]
+  timezone: "Europe/Athens"
+
+schedule:                     # when the agent wakes up (used by the setup script)
+  outreach_runs: ["09:30", "11:30", "14:30", "16:30"]
+  inbox_run: "17:30"

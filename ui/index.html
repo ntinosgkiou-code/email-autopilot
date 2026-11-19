@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email Autopilot</title>
+<style>
+  :root { --ink:#1d2433; --muted:#5b6475; --line:#e3e6ec; --bg:#f4f6f9; --blue:#0a66c2; --blue2:#084e94; --green:#0f7b4a; --amber:#9a5b00; --red:#b42318; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+  .bar { max-width:1000px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .logo { font-weight:800; font-size:19px; margin-right:auto; }
+  .pill { padding:5px 13px; border-radius:99px; font-weight:700; font-size:14px; }
+  .p-test { background:#e8f1fb; color:var(--blue2); } .p-live { background:#e5f6ed; color:var(--green); }
+  .p-stop { background:#fdecea; color:var(--red); } .p-run { background:#fff4dc; color:var(--amber); }
+  nav { max-width:1000px; margin:0 auto; padding:0 20px; display:flex; gap:2px; overflow-x:auto; }
+  nav button { background:none; border:0; padding:10px 14px; font:inherit; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; white-space:nowrap; }
+  nav button.on { color:var(--blue); border-color:var(--blue); font-weight:700; }
+  main { max-width:1000px; margin:0 auto; padding:22px 20px 80px; }
+  h2 { font-size:21px; margin:0 0 4px; } h3 { font-size:17px; margin:0 0 8px; }
+  .sub { color:var(--muted); margin:0 0 16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin:0 0 16px; }
+  .warn { border-left:5px solid var(--amber); background:#fff8eb; } .bad { border-left:5px solid var(--red); background:#fff3f2; } .good { border-left:5px solid var(--green); background:#effaf4; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; }
+  .stat { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; text-align:center; }
+  .stat b { font-size:30px; display:block; line-height:1.1; } .stat span { color:var(--muted); font-size:14px; }
+  button.btn { background:var(--blue); color:#fff; border:0; border-radius:9px; padding:10px 18px; font:inherit; font-weight:600; cursor:pointer; }
+  button.btn:hover { background:var(--blue2); } button.btn:disabled { opacity:.5; cursor:wait; }
+  button.alt { background:#fff; color:var(--blue); border:1px solid var(--blue); } button.alt:hover { background:#eef5fc; }
+  button.go { background:var(--green); } button.go:hover { background:#0a5c37; } button.red { background:var(--red); } button.red:hover { background:#8f1c12; }
+  button.sm { padding:6px 12px; font-size:14px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .step { display:flex; gap:12px; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); }
+  .step:last-child { border:0; } .ico { flex:0 0 28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:15px; }
+  .ico.ok { background:var(--green); } .ico.no { background:#c4cad6; } .step .t { flex:1; } .step .t small { color:var(--muted); display:block; }
+  label { display:block; font-weight:600; margin:14px 0 4px; } .hint { color:var(--muted); font-size:14px; font-weight:400; display:block; }
+  input[type=text], input[type=number], select, textarea { width:100%; font:inherit; padding:9px 11px; border:1px solid #cfd5df; border-radius:8px; background:#fff; }
+  textarea { min-height:78px; resize:vertical; } input:focus, select:focus, textarea:focus { outline:2px solid #9cc4ee; border-color:var(--blue); }
+  .chk { display:inline-flex; gap:6px; align-items:center; margin:4px 12px 4px 0; font-weight:400; }
+  table { width:100%; border-collapse:collapse; background:#fff; } th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); font-size:14px; vertical-align:top; }
+  th { background:#f1f3f7; position:sticky; top:0; } .tw { overflow-x:auto; border:1px solid var(--line); border-radius:12px; max-height:520px; overflow-y:auto; }
+  pre { background:#1d2433; color:#e8ecf3; padding:12px 14px; border-radius:10px; overflow:auto; font-size:12.5px; max-height:300px; white-space:pre-wrap; }
+  .tag { display:inline-block; padding:2px 9px; border-radius:99px; font-size:12.5px; font-weight:600; background:#eef1f5; }
+  .t-interested { background:#e5f6ed; color:var(--green); } .t-not_interested { background:#fdecea; color:var(--red); } .t-emailed,.t-followed_up,.t-replied { background:#e8f1fb; color:var(--blue2); }
+  #toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#1d2433; color:#fff; padding:12px 20px; border-radius:10px; opacity:0; transition:.25s; pointer-events:none; max-width:90vw; z-index:9; }
+  #toast.on { opacity:1; } .empty { color:var(--muted); text-align:center; padding:28px; }
+  .funnel { display:flex; gap:6px; flex-wrap:wrap; } .funnel .f { flex:1; min-width:100px; background:#f1f6fc; border-radius:10px; padding:10px; text-align:center; } .funnel b { font-size:22px; display:block; }
+  .save { position:sticky; bottom:0; background:linear-gradient(transparent,var(--bg) 30%); padding:18px 0 4px; }
+  .small { font-size:14px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar"><div class="logo">✉️ Email Autopilot</div><span id="status" class="pill">…</span></div>
+  <nav id="nav"></nav>
+</header>
+<main id="main"><div class="empty">Φόρτωση…</div></main>
+<div id="toast"></div>
+
+<script>
+const TABS = [['home','Αρχική'],['orders','Εντολές'],['settings','Ρυθμίσεις'],['replies','Απαντήσεις'],['leads','Επαφές'],['msgs','Emails'],['runs','Αρχείο εκτελέσεων']];
+let S = null, tab = localStorage.getItem('tab') || 'home', busy = false, dirty = false;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m, ms = 4200) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), ms); }
+
+async function api(path, body) {
+  const r = await fetch(path, body ? { method:'POST', headers:{'Content-Type':'application/json','X-LA':'1'}, body:JSON.stringify(body) } : {});
+  let d = null; try { d = await r.json(); } catch (e) { /* not json */ }
+  if (!d) throw new Error('Άκυρη απάντηση (' + r.status + ')');
+  return d;
+}
+async function act(o, btn) {
+  if (btn) btn.disabled = true;
+  try { const r = await api('/api/action', o); toast(r.message || 'OK'); }
+  catch (e) { toast('Δεν ολοκληρώθηκε: ' + (e.message || e) + '. Δοκίμασε ξανά.'); }
+  if (btn) btn.disabled = false; await load();
+}
+let fails = 0;
+function offline(msg) {
+  fails++;
+  let b = $('#offline');
+  if (!b) { b = document.createElement('div'); b.id = 'offline'; b.className = 'card bad'; b.style.cssText = 'position:sticky;top:96px;z-index:4;margin:0 0 14px'; $('#main').before(b); }
+  b.innerHTML = S
+    ? `⚠️ <b>Χάθηκε προσωρινά η επικοινωνία με το πρόγραμμα.</b> Ξαναπροσπαθώ αυτόματα… <span class="small">(${esc(msg)})</span>`
+    : `<h3>Ο πίνακας δεν βρίσκει το πρόγραμμα</h3>Συνήθως σημαίνει ότι το <b>μαύρο παράθυρο του START</b> έκλεισε ή δεν ξεκίνησε.<ol style="margin:8px 0">
+       <li>Κλείσε αυτή τη σελίδα.</li><li>Κάνε διπλό κλικ στο <b>START.bat</b> (Mac: START.command).</li><li>Μην ανοίγεις το αρχείο index.html απευθείας.</li></ol>
+       <button class="btn sm" onclick="load()">Δοκίμασε ξανά</button> <span class="small">(${esc(msg)})</span>`;
+}
+function online() { const b = $('#offline'); if (b) b.remove(); fails = 0; }
+async function load() {
+  try {
+    const d = await api('/api/state');
+    if (d.error || !d.cfg) throw new Error(d.error || 'κενή απάντηση');
+    S = d; online(); render();
+  } catch (e) { offline(e.message || e); }
+}
+
+// ---------- header
+function renderHeader() {
+  const el = $('#status'); const m = S.cfg.outreach.mode;
+  let c = 'p-test', t = '🧪 Δοκιμαστική λειτουργία (δεν στέλνει τίποτα)';
+  if (S.job.running) { c = 'p-run'; t = '⏳ Τρέχει τώρα…'; }
+  else if (S.stop) { c = 'p-stop'; t = '⏸ Σε παύση'; }
+  else if (m === 'live') { c = 'p-live'; t = '🟢 Ενεργό: στέλνει πραγματικά'; }
+  el.className = 'pill ' + c; el.textContent = t;
+  $('#nav').innerHTML = TABS.map(([k, n]) => `<button class="${k === tab ? 'on' : ''}" onclick="go('${k}')">${n}${k==='replies'&&S.hot.trim()?' •':''}</button>`).join('');
+}
+function go(k) { tab = k; localStorage.setItem('tab', k); render(); window.scrollTo(0, 0); }
+
+// ---------- home
+function stepRow(ok, title, sub, btn) {
+  return `<div class="step"><div class="ico ${ok ? 'ok' : 'no'}">${ok ? '✓' : '·'}</div><div class="t">${title}<small>${sub}</small></div>${ok ? '' : btn || ''}</div>`;
+}
+function home() {
+  const c = S.checks, r = S.report, mode = S.cfg.outreach.mode;
+  const ready = c.uv && c.claude && c.claude_login && c.configured;
+  const liveReady = ready && c.email_ok;
+  const steps = [
+    stepRow(c.uv, 'Εργαλεία συστήματος', c.uv ? 'Εγκατεστημένα' : 'Λείπει το «uv». Κλείσε αυτό το παράθυρο και τρέξε ξανά το START.bat, απάντησε Y.', ''),
+    stepRow(c.claude, 'Claude Code (ο «εγκέφαλος»)', c.claude ? 'Εγκατεστημένο' : 'Δεν είναι εγκατεστημένο. Χρειάζεται συνδρομή Claude Pro.', c.windows ? `<button class="btn sm" onclick="act({do:'install_claude'},this)">Εγκατάσταση</button>` : ''),
+    stepRow(c.claude_login, 'Σύνδεση στο Claude', c.claude_login ? 'Συνδεδεμένος' : 'Πάτα το κουμπί. Στο παράθυρο που ανοίγει γράψε /login και συνδέσου.', `<button class="btn sm" onclick="act({do:'claude_login'},this)">Σύνδεση</button>`),
+    stepRow(c.configured, 'Οι ρυθμίσεις σου', c.configured ? 'Συμπληρωμένες' : 'Πες μας τι πουλάς και ποιους πελάτες ψάχνεις.', `<button class="btn sm" onclick="go('settings')">Συμπλήρωση</button>`),
+    stepRow(c.email_ok, 'Email αποστολής', c.email_ok ? 'Έτοιμο. (Για δοκιμή δεν χρειάζεται, μόνο για κανονική αποστολή.)' : esc(c.email_problem || 'Συνδέεται με το Gmail σου μέσω «κωδικού εφαρμογής». Χρειάζεται μόνο για κανονική αποστολή.'), `<button class="btn sm" onclick="go('settings')">Ρύθμιση</button>`),
+    stepRow(c.schedule, 'Καθημερινό πρόγραμμα', c.schedule ? 'Ενεργό (τρέχει μόνο του τις ώρες γραφείου)' : 'Ορίζει πότε ξυπνάει ο βοηθός κάθε μέρα.', `<button class="btn sm" onclick="act({do:'schedule'},this)">Ενεργοποίηση</button>`),
+  ].join('');
+  const t = r.today, p = r.pipeline;
+  const stopBox = S.stop ? `<div class="card bad"><b>⏸ Σε παύση.</b> ${esc(S.stop)}
+     <div class="row" style="margin-top:10px"><button class="btn go" onclick="act({do:'resume'},this)">▶ Συνέχεια</button></div></div>` : '';
+  const warn = (r.warnings || []).map(w => `<div class="card warn">⚠️ ${esc(w)}</div>`).join('');
+  const modeBox = mode === 'live'
+    ? `<div class="card good"><h3>🟢 Ενεργό: στέλνει πραγματικά emails</h3><p class="sub" style="margin:0 0 10px">Ο βοηθός δουλεύει κάθε εργάσιμη μέρα. Εσύ κοιτάς μόνο την καρτέλα «Απαντήσεις».</p>
+       <div class="row"><button class="btn alt" onclick="act({do:'mode',value:'dry_run'},this)">Γύρνα σε δοκιμαστική</button>
+       ${S.stop ? '' : `<button class="btn red" onclick="act({do:'pause'},this)">⏸ Παύση</button>`}</div></div>`
+    : `<div class="card"><h3>🧪 Δοκιμαστική λειτουργία</h3><p class="sub" style="margin:0 0 10px">Ο βοηθός ψάχνει επιχειρήσεις, βρίσκει emails και γράφει τα μηνύματα, αλλά <b>δεν στέλνει τίποτα</b>. Δες τα αποτελέσματα στις καρτέλες «Επαφές» και «Emails». Όταν σου αρέσουν, ενεργοποίησε την κανονική αποστολή.</p>
+       <div class="row"><button class="btn" ${S.job.running || !ready ? 'disabled' : ''} onclick="act({do:'run',task:'outreach'},this)">▶ Δοκιμή τώρα (5–20 λεπτά)</button>
+       <button class="btn go" ${liveReady ? '' : 'disabled'} onclick="goLive(this)">✅ Ενεργοποίηση κανονικής αποστολής</button></div>
+       ${liveReady ? '' : '<p class="small" style="margin:10px 0 0">Για την κανονική αποστολή χρειάζονται όλα τα βήματα της λίστας (και το Email αποστολής).</p>'}</div>`;
+  const job = S.job.running ? `<div class="card warn">⏳ Τρέχει η ${S.job.scheduled ? 'προγραμματισμένη ' : ''}εκτέλεση «${esc(S.job.task)}» εδώ και ${Math.floor(S.job.since / 60)}′ ${S.job.since % 60}″. Μπορείς να κλείσεις τη σελίδα, θα συνεχίσει.</div>` : '';
+  return `${stopBox}${job}${warn}
+  <div class="card"><h3>Ετοιμότητα</h3><p class="sub" style="margin:0 0 6px">Ακολούθησε τη λίστα από πάνω προς τα κάτω.</p>${steps}</div>
+  ${modeBox}
+  <h2 style="margin-top:22px">Σήμερα</h2>
+  <div class="grid" style="margin:10px 0 16px">
+    <div class="stat"><b>${t.email}</b><span>πρώτα emails<br>(μένουν ${r.remaining_today.email})</span></div>
+    <div class="stat"><b>${t.followup}</b><span>υπενθυμίσεις</span></div>
+    <div class="stat"><b>${t.reply}</b><span>απαντήσεις μας</span></div>
+    <div class="stat"><b>${t.bounce}</b><span>αποτυχημένες διευθύνσεις</span></div></div>
+  ${r.warmup ? '<p class="small">🌱 Πρώτες μέρες: στέλνει τα μισά από τα κανονικά όρια, για να χτιστεί η φήμη του email σου και να μη καταλήγεις στα spam.</p>' : ''}
+  <h2 style="margin-top:22px">Πορεία πελατών</h2>
+  <div class="funnel" style="margin:10px 0">${[['new','Νέοι'],['emailed','Email στάλθηκε'],['followed_up','Υπενθύμιση'],['replied','Απάντησαν'],['interested','Ενδιαφέρονται']].map(([k, n]) => `<div class="f"><b>${p[k] || 0}</b>${n}</div>`).join('')}</div>
+  <p class="small">Ποσοστό απάντησης: <b>${r.reply_rate}</b> (καλό για cold email: 3–8%) · Αποτυχημένες διευθύνσεις: <b>${r.bounce_rate}</b> (κράτα το κάτω από 5%)</p>
+  <div class="card" style="margin-top:18px"><h3>Άλλες ενέργειες</h3><div class="row">
+    <button class="btn alt sm" ${S.job.running ? 'disabled' : ''} onclick="act({do:'run',task:'inbox'},this)">📥 Έλεγχος απαντήσεων και υπενθυμίσεις</button>
+    <button class="btn alt sm" onclick="act({do:'open_folder'},this)">📁 Άνοιγμα φακέλου δεδομένων</button></div></div>`;
+}
+function goLive(btn) {
+  if (!confirm('ΠΡΟΣΟΧΗ\n\nΑπό εδώ και πέρα ο βοηθός θα στέλνει ΠΡΑΓΜΑΤΙΚΑ emails σε επιχειρήσεις και δημιουργούς από το email σου, χωρίς να ρωτάει.\n\nΕίσαι υπεύθυνος για το περιεχόμενο και τη νομιμότητα (GDPR / CAN-SPAM): κάθε email έχει υπογραφή και τρόπο διαγραφής, και όποιος πει «όχι» αποκλείεται αυτόματα. Έχεις δει τα δείγματα στη δοκιμή και σου αρέσουν;\n\nΣυνέχεια;')) return;
+  act({ do: 'mode', value: 'live' }, btn);
+}
+
+// ---------- settings
+const L = (k, n, h) => [k, n, 'list', h];
+const FORM = [
+  { sec:'profile', title:'1. Εσύ', fields:[
+    ['name','Το όνομά σου','text','Όπως θα υπογράφεις τα emails.'],
+    ['company','Η επωνυμία σου (προαιρετικό)','text','Θα φαίνεται στην υπογραφή.'],
+    ['language','Γλώσσα emails','select',[['auto','Αυτόματα (στη γλώσσα του site τους) ✔'],['el','Ελληνικά'],['en','English'],['de','Deutsch'],['es','Español'],['fr','Français']]],
+    ['about_me','Μια σύντομη συστάση','area','Ποιος είσαι, τι κάνεις, ένα στοιχείο που σε κάνει αξιόπιστο. Π.χ. «12 κλινικές το χρησιμοποιούν, 3.400 κλήσεις το τρίμηνο».']]},
+  { sec:'offer', title:'2. Τι προσφέρεις', fields:[
+    ['what','Τι πουλάς (1 πρόταση)','text','Π.χ. «Ψηφιακή γραμματέας με AI που σηκώνει το τηλέφωνο και κλείνει ραντεβού 24/7».'],
+    ['for_who','Σε ποιον απευθύνεται','text','Π.χ. «Ιδιοκτήτες οδοντιατρείων στην Ελλάδα».'],
+    ['outcome','Το αποτέλεσμα για τον πελάτη','text','Με αριθμό αν γίνεται. Π.χ. «Ανακτά περίπου 20 χαμένες κλήσεις τον μήνα».'],
+    ['cta','Τι ζητάς στο τέλος','text','Π.χ. «Έχει νόημα ένα 15λεπτο τηλεφώνημα την άλλη εβδομάδα;»'],
+    ['price','Τιμή (προαιρετικό)','text','Αν το αφήσεις κενό, ο βοηθός δεν θα συζητήσει τιμές.'],
+    ['faq','Απαντήσεις σε συχνές ερωτήσεις','area','Μικρές απαντήσεις σε ό,τι ρωτάνε συνήθως.'],
+    ['link','Link (προαιρετικό)','text','Στέλνεται μόνο σε όσους δείξουν ενδιαφέρον, ποτέ στο πρώτο email.']]},
+  { sec:'targeting', title:'3. Ποιους ψάχνεις', fields:[
+    L('kinds','Τι είδους στόχοι','Γράψε businesses (τοπικές επιχειρήσεις από χάρτες και sites), creators (δημιουργοί με δικό τους brand), ή και τα δύο χωρισμένα με κόμμα.'),
+    L('businesses','Είδη επιχειρήσεων','Π.χ. dental clinic, φυσιοθεραπευτήριο, κομμωτήριο, γυμναστήριο'),
+    L('locations','Περιοχές','Π.χ. Thessaloniki Greece, Athens Greece'),
+    L('creators','Δημιουργοί με brand (θέματα)','Π.χ. skincare founder, fitness coach brand, μόδα designer'),
+    L('exclude_keywords','Να αποκλείονται','Π.χ. franchise, δημόσιο νοσοκομείο, ανταγωνιστής'),
+    ['ideal_customer','Ο ιδανικός πελάτης με δικά σου λόγια','area','Ο βοηθός βαθμολογεί κάθε στόχο από 1 έως 10 σε σχέση με αυτό.'],
+    ['min_fit_score','Πόσο αυστηρός να είναι','select',[['5','Χαλαρός (5+)'],['6','Μέτριος (6+)'],['7','Κανονικός (7+) ✔ προτείνεται'],['8','Αυστηρός (8+)'],['9','Πολύ αυστηρός (9+)']]],
+    ['maps_key','Κλειδί Google Maps / Places API (προαιρετικό)','secret','Χωρίς κλειδί χρησιμοποιεί τον δωρεάν χάρτη OpenStreetMap (καλός για τα περισσότερα είδη). Με κλειδί παίρνει πολύ περισσότερα αποτελέσματα από το Google Maps.']]},
+  { sec:'outreach', title:'4. Emails', fields:[
+    ['enabled','Να στέλνει emails','bool'],
+    ['message_style','Ύφος emails','area','Π.χ. «Θέμα μέχρι 7 λέξεις. Κείμενο 60–110 λέξεις. Φιλικό. Μία συγκεκριμένη λεπτομέρεια από το site τους. Μία ερώτηση. Χωρίς links.»'],
+    ['followups','Υπενθυμίσεις αν δεν απαντήσουν','select',[['0','Καμία'],['1','1 υπενθύμιση ✔'],['2','2 υπενθυμίσεις']]],
+    ['followup_after_days','Μετά από πόσες μέρες η υπενθύμιση','number','']]},
+  { sec:'email', title:'5. Από ποιο email στέλνει', fields:[
+    ['provider','Πάροχος','select',[['smtp','Gmail / Outlook / οποιοδήποτε email (SMTP) ✔'],['resend','Resend (API key)']]],
+    ['from_name','Όνομα αποστολέα','text','Αυτό βλέπει ο παραλήπτης. Π.χ. «Γιώργος από Ran-Tevu».'],
+    ['from_email','Email αποστολής','text','Π.χ. giorgos@etairia.gr'],
+    ['reply_to','Email για απαντήσεις (προαιρετικό)','text','Αν είναι κενό, οι απαντήσεις έρχονται στο email αποστολής.'],
+    ['smtp_host','Διακομιστής SMTP','text','Gmail: smtp.gmail.com · Outlook: smtp-mail.outlook.com'],
+    ['smtp_port','Θύρα','number','Συνήθως 587.'],
+    ['smtp_user','Όνομα χρήστη','text','Συνήθως το ίδιο με το email αποστολής.'],
+    ['password','Κωδικός εφαρμογής (app password)','secret','Gmail: Λογαριασμός Google → Ασφάλεια → Επαλήθευση 2 βημάτων → Κωδικοί εφαρμογών. ΔΕΝ είναι ο κανονικός σου κωδικός. Αποθηκεύεται μόνο σε αυτόν τον υπολογιστή.'],
+    ['resend_key','Resend API key (αν επέλεξες Resend)','secret','Από resend.com. Αποθηκεύεται μόνο εδώ.'],
+    ['footer','Υπογραφή / στοιχεία αποστολέα (ΥΠΟΧΡΕΩΤΙΚΟ για κανονική αποστολή)','area','Όνομα, εταιρεία και ταχυδρομική διεύθυνση. Ο νόμος (GDPR, CAN-SPAM) το απαιτεί σε κάθε εμπορικό email. Π.χ. «Γιώργος Παπαδόπουλος, Ran-Tevu, Εγνατίας 10, Θεσσαλονίκη»'],
+    ['allow_freemail','Να επιτρέπονται διευθύνσεις τύπου @gmail.com','bool'],
+    ['_test','Δοκιμή σύνδεσης','test']]},
+  { sec:'limits', title:'6. Ασφάλεια και ώρες', fields:[
+    ['preset','Γρήγορη επιλογή (γεμίζει τα νούμερα από κάτω, μετά τα αλλάζεις όπως θες)','preset'],
+    ['emails_per_day','Emails τη μέρα','number','Μέγιστο 100. Για καινούργιο email, κάτω από 40 είναι ασφαλές.'],
+    ['warmup_days','Μέρες προθέρμανσης','number','Τις πρώτες μέρες στέλνει τα μισά. 0 = χωρίς προθέρμανση (ρίσκο για spam).'],
+    ['min_delay_seconds','Ελάχιστη παύση ανάμεσα σε emails (δευτερόλεπτα)','number','Τυχαία παύση ανάμεσα στο ελάχιστο και το μέγιστο.'],
+    ['max_delay_seconds','Μέγιστη παύση (δευτερόλεπτα)','number',''],
+    ['work_days','Εργάσιμες μέρες','days'],
+    ['work_hours','Ώρες δουλειάς','text','Μορφή 09:00-18:00'],
+    ['timezone','Ζώνη ώρας','text','Π.χ. Europe/Athens']]},
+  { sec:'schedule', title:'7. Ώρες εκτέλεσης', fields:[
+    L('outreach_runs','Ώρες αναζήτησης και αποστολής','Π.χ. 09:30, 11:30, 14:30, 16:30'),
+    ['inbox_run','Ώρα ελέγχου απαντήσεων','time']]},
+];
+const DAYS = [['Mon','Δευ'],['Tue','Τρι'],['Wed','Τετ'],['Thu','Πεμ'],['Fri','Παρ'],['Sat','Σαβ'],['Sun','Κυρ']];
+function field(sec, f) {
+  const [k, label, type, extra] = f, id = `f_${sec}_${k}`, v = type === 'secret' ? '' : (S.cfg[sec] || {})[k], hint = typeof extra === 'string' && extra ? `<span class="hint">${esc(extra)}</span>` : '';
+  if (type === 'bool') return `<label class="chk" style="margin:12px 0"><input type="checkbox" id="${id}" ${v ? 'checked' : ''}> <b>${label}</b></label><br>`;
+  let inp = '';
+  if (type === 'secret') { const have = (S.secrets || {})[k]; inp = `<input type="password" id="${id}" autocomplete="new-password" placeholder="${have ? '•••••••• αποθηκευμένο (άφησέ το κενό για να μείνει)' : 'δεν έχει οριστεί'}">`; }
+  else if (type === 'test') return `<div class="row" style="margin:14px 0"><button class="btn alt" onclick="testEmail(this)">✉️ Στείλε δοκιμαστικό email στον εαυτό μου</button><span class="small">Πρώτα πάτα «Αποθήκευση» πιο κάτω.</span></div>`;
+  else if (type === 'text') inp = `<input type="text" id="${id}" value="${esc(v)}">`;
+  else if (type === 'time') inp = `<input type="text" id="${id}" value="${esc(v)}" placeholder="08:30" style="max-width:140px">`;
+  else if (type === 'number') inp = `<input type="number" id="${id}" value="${esc(v)}" style="max-width:140px">`;
+  else if (type === 'area') inp = `<textarea id="${id}">${esc(v)}</textarea>`;
+  else if (type === 'list') inp = `<textarea id="${id}">${esc((v || []).join(', '))}</textarea>`;
+  else if (type === 'select') inp = `<select id="${id}">${extra.map(([a, b]) => `<option value="${a}" ${String(v) === a ? 'selected' : ''}>${b}</option>`).join('')}</select>`;
+  else if (type === 'days') inp = `<div id="${id}">${DAYS.map(([a, b]) => `<label class="chk"><input type="checkbox" value="${a}" ${(v || []).includes(a) ? 'checked' : ''}> ${b}</label>`).join('')}</div>`;
+  else if (type === 'preset') {
+    const l = S.cfg.limits, cur = l.emails_per_day <= 15 ? 'gentle' : l.emails_per_day >= 60 ? 'max' : 'normal';
+    return `<label>${label}<span class="hint">Περισσότερα emails από καινούργιο email = spam. Το «Κανονικό» είναι ο σωστός συμβιβασμός.</span></label>
+      <select id="f_limits_preset" onchange="applyPreset(this.value)"><option value="">Διάλεξε για να γεμίσουν τα νούμερα…</option>${[['gentle','Ήπιο: 15 emails τη μέρα (ασφαλέστερο)'],['normal','Κανονικό: 30 emails τη μέρα ✔'],['max','Μέγιστο: 100 emails τη μέρα (ψηλός κίνδυνος spam)']].map(([a, b]) => `<option value="${a}" ${cur === a ? 'selected' : ''}>${b}</option>`).join('')}</select>`;
+  }
+  return `<label>${label}${hint}</label>${inp}`;
+}
+function settings() {
+  const modified = dirty ? '' : '';
+  return `<h2>Ρυθμίσεις</h2><p class="sub">Συμπλήρωσε τα πεδία και πάτα «Αποθήκευση» στο τέλος. Ό,τι αφήσεις κενό, ο βοηθός το αγνοεί.</p>
+  ${FORM.map(g => `<div class="card"><h3>${g.title}</h3>${g.fields.map(f => field(g.sec, f)).join('')}</div>`).join('')}
+  <div class="save"><button class="btn" onclick="saveSettings(this)">💾 Αποθήκευση ρυθμίσεων</button></div>`;
+}
+const PRESET_VALUES = { gentle:{emails_per_day:15}, normal:{emails_per_day:30}, max:{emails_per_day:100} };
+function applyPreset(k) { const v = PRESET_VALUES[k]; if (!v) return; for (const [f, n] of Object.entries(v)) { const el = document.getElementById('f_limits_' + f); if (el) el.value = n; } toast('Τα νούμερα συμπληρώθηκαν. Πάτα «Αποθήκευση» για να ισχύσουν.'); }
+async function saveSettings(btn) {
+  const values = {}, secrets = {};
+  for (const g of FORM) {
+    values[g.sec] = values[g.sec] || {};
+    for (const [k, , type] of g.fields) {
+      const id = `f_${g.sec}_${k}`;
+      if (type === 'preset' || type === 'test') continue;
+      const el = document.getElementById(id); if (!el) continue;
+      if (type === 'secret') { if (el.value.trim()) secrets[k] = el.value.trim(); continue; }
+      let v;
+      if (type === 'bool') v = el.checked;
+      else if (type === 'days') v = [...el.querySelectorAll('input:checked')].map(i => i.value);
+      else if (type === 'select' && (k === 'min_fit_score' || k === 'followups')) v = parseInt(el.value);
+      else if (type === 'number') v = parseInt(el.value || '0');
+      else v = el.value;
+      values[g.sec][k] = v;
+    }
+  }
+  btn.disabled = true;
+  try {
+    const r = await api('/api/config', { values, secrets, reschedule: true });
+    toast(r.message || 'Αποθηκεύτηκε.');
+  } catch (e) { toast('Σφάλμα: ' + e); }
+  btn.disabled = false; await load();
+}
+async function testEmail(btn) { await act({ do: 'email_test' }, btn); }
+
+// ---------- other tabs
+const OST = { pending:['Σε αναμονή','t-new'], done:['Έγινε','t-emailed'], drafted:['Γράφτηκε (δοκιμή, δεν στάλθηκε)','t-replied'], failed:['Δεν έγινε','t-not_interested'], skipped:['Παραλείφθηκε','t-skipped'] };
+function orders() {
+  const list = S.orders || [];
+  const pending = list.filter(o => o.status === 'pending').length;
+  const rows = list.map(o => { const st = OST[o.status] || [o.status, '']; return `<div class="card"><div class="row" style="justify-content:space-between"><span class="small">#${o.id} · ${esc(o.created)}</span><span class="tag ${st[1]}">${st[0]}</span></div>
+    <div style="white-space:pre-wrap;margin:6px 0"><b>${esc(o.text)}</b></div>${o.result ? `<div class="small" style="white-space:pre-wrap">${esc(o.result)}</div>` : ''}
+    <div class="row" style="margin-top:8px">${o.status !== 'pending' ? `<button class="btn sm alt" onclick="act({do:'order_retry',id:${o.id}},this)">Ξανά</button>` : ''}<button class="btn sm alt" onclick="act({do:'order_remove',id:${o.id}},this)">Διαγραφή</button></div></div>`; }).join('');
+  return `<h2>Εντολές: μίλα του με δικά σου λόγια</h2>
+  <p class="sub">Γράψε τι θέλεις και ο βοηθός το κάνει στην επόμενη εκτέλεση, με τα ίδια όρια ασφαλείας. Μία εντολή κάθε φορά.</p>
+  <div class="card"><textarea id="ordtext" rows="4" style="width:100%" placeholder="Παραδείγματα:&#10;• γράψε στο info@onoma-etairias.gr για τη νέα μας υπηρεσία, φιλικά, χωρίς πίεση&#10;• βρες 15 οδοντιάτρους στη Θεσσαλονίκη με site και email και πρόσθεσέ τους στις επαφές&#10;• βρες 10 δημιουργούς με δικό τους skincare brand και γράψε τους για συνεργασία"></textarea>
+  <div class="row" style="margin-top:8px"><button class="btn" onclick="addOrder(this)">Πρόσθεσε εντολή</button>
+  <button class="btn alt" ${S.job.running || !pending ? 'disabled' : ''} onclick="act({do:'run',task:'orders'},this)">▶ Εκτέλεση τώρα${pending ? ' (' + pending + ')' : ''}</button></div>
+  <p class="small">${S.cfg.outreach.mode === 'live' ? '🟢 Ενεργό: θα στείλει πραγματικά emails.' : '🧪 Δοκιμαστική λειτουργία: θα γράψει τα μηνύματα και θα στα δείξει εδώ, χωρίς να στείλει.'}</p></div>
+  ${rows || '<div class="card empty">Δεν έχεις δώσει εντολές ακόμα.</div>'}`;
+}
+async function addOrder(btn) { const t = $('#ordtext'); const v = t.value.trim(); if (!v) return toast('Γράψε πρώτα την εντολή.'); await act({ do: 'order_add', text: v }, btn); t.value = ''; render(); }
+function replies() {
+  const h = S.hot.trim();
+  if (!h) return `<h2>Απαντήσεις</h2><div class="card empty">Δεν έχει απαντήσει κανείς ακόμα.<br>Όταν κάποιος ενδιαφερθεί, θα εμφανιστεί εδώ και εσύ απαντάς προσωπικά από το email σου.</div>`;
+  const parts = h.split(/^## /m).filter(x => x.trim());
+  return `<h2>Απαντήσεις: εδώ κλείνονται οι πελάτες</h2><p class="sub">Οι άνθρωποι που απάντησαν. Απάντησέ τους εσύ προσωπικά από το email σου.</p>` +
+    parts.map(p => { const [t, ...rest] = p.split('\n'); return `<div class="card good"><h3>${esc(t)}</h3><div style="white-space:pre-wrap">${esc(rest.join('\n').trim())}</div></div>`; }).join('');
+}
+const ST = { new:'Νέος', emailed:'Email στάλθηκε', followed_up:'Υπενθύμιση', replied:'Απάντησε', interested:'Ενδιαφέρεται', not_interested:'Όχι', bounced:'Λάθος διεύθυνση', skipped:'Παραλείφθηκε' };
+function leads() {
+  if (!S.leads.length) return `<h2>Επαφές</h2><div class="card empty">Δεν υπάρχουν επαφές ακόμα. Πάτα «Δοκιμή τώρα» στην Αρχική.</div>`;
+  const rows = [...S.leads].sort((a, b) => (b.fit_score | 0) - (a.fit_score | 0)).map(l => `<tr><td><b>${esc(l.name || l.company || l.email)}</b><br><span class="small">${esc(l.email)}</span>${l.website ? `<br><a class="small" href="${esc(l.website)}" target="_blank" rel="noopener">${esc(l.website.replace(/^https?:\/\//, ''))}</a>` : ''}</td>
+    <td class="small">${esc(l.category)}<br>${esc(l.location)}</td><td><b>${esc(l.fit_score)}</b>/10</td><td class="small">${esc(l.hook)}</td><td><span class="tag t-${l.status}">${ST[l.status] || l.status}</span></td></tr>`).join('');
+  return `<h2>Επαφές (${S.leads.length})</h2><p class="sub">Όσους βρήκε ο βοηθός, με βαθμό καταλληλότητας και τον λόγο που θα τους γράψει.</p><div class="tw"><table><tr><th>Επιχείρηση / δημιουργός</th><th>Είδος</th><th>Βαθμός</th><th>Αφορμή</th><th>Κατάσταση</th></tr>${rows}</table></div>`;
+}
+const ACT = { email:'Πρώτο email', followup:'Υπενθύμιση', reply:'Απάντηση', bounce:'Αποτυχία διεύθυνσης', stop:'ΣΤΟΠ', block:'Αποκλεισμός' };
+function msgs() {
+  const L = S.log.filter(x => ['email', 'followup', 'reply', 'bounce', 'stop', 'block'].includes(x.action));
+  if (!L.length) return `<h2>Emails</h2><div class="card empty">Δεν έχει γραφτεί κανένα email ακόμα.</div>`;
+  return `<h2>Emails</h2><p class="sub">Ό,τι έγραψε ο βοηθός, ακριβώς όπως το έγραψε. «Δοκιμή» σημαίνει ότι <b>δεν στάλθηκε</b>.</p><div class="tw"><table><tr><th>Πότε</th><th>Τι</th><th>Προς</th><th>Κείμενο</th><th></th></tr>${L.map(x => `<tr><td class="small">${esc(x.timestamp)}</td><td>${ACT[x.action] || x.action}</td><td class="small">${esc(x.target)}</td><td style="white-space:pre-wrap">${esc(x.detail)}</td><td><span class="tag">${x.mode === 'live' ? 'Στάλθηκε' : 'Δοκιμή'}</span></td></tr>`).join('')}</table></div>`;
+}
+function runs() {
+  if (!S.runs.length) return `<h2>Αρχείο εκτελέσεων</h2><div class="card empty">Δεν έχει τρέξει τίποτα ακόμα.</div>`;
+  return `<h2>Αρχείο εκτελέσεων</h2><p class="sub">Τεχνικές λεπτομέρειες κάθε εκτέλεσης. Χρειάζεται μόνο αν κάτι δεν δουλεύει.</p>` + S.runs.map(r => `<div class="card"><b>${esc(r.name)}</b><pre>${esc(r.tail)}</pre></div>`).join('');
+}
+
+function render() {
+  if (!S) return;
+  renderHeader();
+  if (tab === 'settings' && document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && $('#main').querySelector('.save')) return; // never wipe what the user is typing
+  if (tab === 'orders' && $('#ordtext') && $('#ordtext').value.trim()) return; // never wipe what the user is typing
+  const m = { home, orders, settings, replies, leads, msgs, runs }[tab] || home;
+  const alert = S.alert ? `<div class="card bad"><b>⚠️ Χρειάζεται προσοχή:</b> ${esc(S.alert)}<div class="row" style="margin-top:10px"><button class="btn sm alt" onclick="act({do:'dismiss_alert'},this)">Το είδα</button></div></div>` : '';
+  try { $('#main').innerHTML = alert + m(); } catch (e) { $('#main').innerHTML = '<div class="card bad">Δεν μπόρεσα να δείξω αυτή την καρτέλα (' + esc(e.message) + '). Δοκίμασε άλλη καρτέλα ή ανανέωσε τη σελίδα.</div>'; }
+}
+load();
+setInterval(async () => { if (tab !== 'settings') return load(); try { await api('/api/ping'); online(); } catch (e) { offline(e.message || e); } }, 5000);
+</script>
+</body>
+</html>
