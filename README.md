@@ -18,10 +18,15 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 Mac/Linux: `bash install.sh`. It copies the program to `~/email-autopilot`, installs `uv`, registers the skill for Claude Code / Codex, adds a desktop icon and opens the dashboard. Run it again any time to update: your settings and data are kept.
 
-**B. Let your AI agent install it.** Open any agent (Claude Code, Codex, Cursor, ...) and say:
+**B. One line from the internet (Windows, PowerShell or cmd):**
+```
+powershell -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create(((irm https://raw.githubusercontent.com/ntinosgkiou-code/email-autopilot/main/install.ps1).TrimStart([char]0xFEFF)))) -Url https://github.com/ntinosgkiou-code/email-autopilot/archive/refs/heads/main.zip"
+```
+
+**C. Let your AI agent install it.** Open any agent (Claude Code, Codex, Cursor, ...) and say:
 > Install Email Autopilot: read `AGENT-INSTALL.md` in this folder and follow it. Stop where it says the user must act.
 
-**C. Just double-click `START.bat`.** The dashboard guides you through the rest.
+**D. Just double-click `START.bat`.** The dashboard guides you through the rest.
 
 ## Setup in 5 steps (the dashboard does all of this with buttons)
 1. Install an AI agent and sign in: [Claude Code](https://claude.com/claude-code) (paid Claude plan) or [Codex](https://developers.openai.com/codex).
