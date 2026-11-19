@@ -6,6 +6,7 @@
       "Bash(uv run tools/guard.py:*)",
       "Bash(uv run tools/mailer.py:*)",
       "Bash(uv run tools/finder.py:*)",
+      "Bash(uv run tools/deliverability.py:*)",
       "Read",
       "Edit(data/**)",
       "Edit(config.yaml)"

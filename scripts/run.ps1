@@ -60,6 +60,7 @@ try {
         $allowed = @('WebSearch', 'WebFetch', 'Bash(uv run tools/guard.py:*)', 'Bash(uv run --quiet tools/guard.py:*)',
             'Bash(uv run tools/mailer.py:*)', 'Bash(uv run --quiet tools/mailer.py:*)',
             'Bash(uv run tools/finder.py:*)', 'Bash(uv run --quiet tools/finder.py:*)',
+            'Bash(uv run tools/deliverability.py:*)', 'Bash(uv run --quiet tools/deliverability.py:*)',
             'Read', 'Glob', 'Grep', 'Edit(data/**)')
         & claude -p $prompt --permission-mode acceptEdits --max-turns 250 --allowedTools $allowed *>&1 | Out-File $log -Append -Encoding utf8
     } else {

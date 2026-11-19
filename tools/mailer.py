@@ -10,6 +10,7 @@ dry_run), so they hold even if an AI agent forgets them.
   uv run tools/mailer.py send --to a@b.com --subject "..." --body "..." [--kind email|followup|reply]
   uv run tools/mailer.py inbox [--days 14]        # replies + bounces from the mailbox (IMAP)
   uv run tools/mailer.py test --to me@example.com # sends a test message to YOURSELF (not counted, not a lead)
+  uv run tools/mailer.py verify a@b.com [--deep]  # is this address likely to deliver? (valid / risky / invalid / unknown)
   uv run tools/mailer.py status                   # is sending configured?
 
 Passwords live ONLY in data/.secrets/email.json (written by the dashboard form). Never in config.yaml.
@@ -34,6 +35,7 @@ from email.message import EmailMessage
 from email.utils import formatdate, make_msgid, parseaddr
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import dnsutil  # noqa: E402
 import guard  # noqa: E402
 
 SECRETS = guard.DATA / ".secrets" / "email.json"
@@ -132,6 +134,53 @@ def domain_resolves(addr: str) -> bool:
         return False
 
 
+DISPOSABLE = {"mailinator.com", "10minutemail.com", "guerrillamail.com", "tempmail.com", "trashmail.com", "yopmail.com", "sharklasers.com", "getnada.com"}
+BAD_LOCAL = re.compile(r"^(no-?reply|donotreply|do-not-reply|mailer-daemon|postmaster|abuse|spam|privacy|dpo|legal|unsubscribe)$")
+
+
+def verify_address(addr: str, deep: bool = False, from_email: str = "") -> dict:
+    """valid = looks deliverable | risky = may bounce or is a catch-all | invalid = will bounce | unknown = could not check (never blocks sending).
+    Light check = syntax + real mail servers (MX) via DNS-over-HTTPS. deep = also asks the mail server (needs outbound port 25, often blocked at home)."""
+    a = guard.norm_email(addr)
+    reasons: list[str] = []
+    if not guard.EMAIL_RE.match(a):
+        return {"email": a, "status": "invalid", "reasons": ["bad syntax"]}
+    local, dom = a.rsplit("@", 1)
+    if BAD_LOCAL.match(local):
+        return {"email": a, "status": "invalid", "reasons": ["system or no-reply address"]}
+    if dom in DISPOSABLE:
+        return {"email": a, "status": "invalid", "reasons": ["disposable domain"]}
+    hosts, st = dnsutil.mx_hosts(dom)
+    if hosts is None:
+        return {"email": a, "status": "unknown", "reasons": [f"DNS lookup failed ({st})"]}
+    if not hosts:
+        a_rec, _ = dnsutil.lookup(dom, "A")
+        if st == "nxdomain" or not a_rec:
+            return {"email": a, "status": "invalid", "reasons": ["domain has no mail server"]}
+        reasons.append("no MX record, would use the web server (rarely works)")
+        return {"email": a, "status": "risky", "reasons": reasons}
+    status = "valid"
+    if deep:
+        try:
+            with smtplib.SMTP(hosts[0], 25, timeout=8) as srv:
+                srv.ehlo_or_helo_if_needed()
+                srv.mail(from_email or "verify@example.com")
+                code, _ = srv.rcpt(a)
+                if code >= 500:
+                    return {"email": a, "status": "invalid", "reasons": [f"mail server says the mailbox does not exist ({code})"], "mx": hosts[0]}
+                if code in (250, 251):
+                    code2, _ = srv.rcpt(f"zz-nonexistent-{os.getpid()}@{dom}")
+                    if code2 in (250, 251):
+                        status = "risky"
+                        reasons.append("catch-all domain: the server accepts any address, cannot confirm this mailbox")
+                else:
+                    reasons.append(f"server answered {code} (greylisting or blocking), cannot confirm")
+                    status = "risky"
+        except Exception as ex:  # noqa: BLE001
+            reasons.append(f"deep check not possible from this network ({type(ex).__name__}); MX exists")
+    return {"email": a, "status": status, "reasons": reasons or ["mail servers exist"], "mx": hosts[0]}
+
+
 def refuse(reason: str, **extra) -> dict:
     return {"sent": False, "refused": True, "reason": reason, **extra}
 
@@ -179,10 +228,11 @@ def send(cfg, to: str, subject: str, body: str, kind: str = "email") -> dict:
         return refuse(why)
     if len((cfg["email"].get("footer") or "").strip()) < 10:
         return refuse("email.footer is empty: put your name, company and postal address there before going live (required by EU/UK/US law)")
-    if not domain_resolves(to):
-        guard.append_log("note", to, md, "domain does not exist, skipped", cfg)
-        guard.cmd_bounce(argparse.Namespace(email=to, reason="domain does not resolve"), cfg)
-        return refuse("the domain of this address does not exist (blocked)")
+    v = verify_address(to)
+    if v["status"] == "invalid":
+        guard.append_log("note", to, md, "address failed verification: " + "; ".join(v["reasons"]), cfg)
+        guard.cmd_bounce(argparse.Namespace(email=to, reason="verification: " + "; ".join(v["reasons"])), cfg)
+        return refuse("address failed verification (" + "; ".join(v["reasons"]) + "), blocked")
     try:
         transmit(cfg, compose(cfg, to, subject, body, kind))
     except smtplib.SMTPRecipientsRefused:
@@ -270,6 +320,7 @@ def main():
     s = sub.add_parser("inbox"); s.add_argument("--days", type=int, default=14)
     s = sub.add_parser("test"); s.add_argument("--to", required=True)
     sub.add_parser("status")
+    s = sub.add_parser("verify"); s.add_argument("email"); s.add_argument("--deep", action="store_true")
     a = ap.parse_args()
     cfg = guard.load_config()
     if a.cmd == "send":
@@ -277,6 +328,8 @@ def main():
         guard.out(send(cfg, a.to, a.subject, body, a.kind))
     elif a.cmd == "inbox":
         guard.out(read_inbox(cfg, a.days))
+    elif a.cmd == "verify":
+        guard.out(verify_address(a.email, a.deep, cfg["email"].get("from_email", "")))
     elif a.cmd == "test":
         guard.out(send_test(cfg, a.to))
     else:

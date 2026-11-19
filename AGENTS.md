@@ -21,16 +21,18 @@ Scheduled runs have no human present. Never ask questions in those runs. Decide,
 - **Finder** `tools/finder.py` (finds businesses and public contact details):
   - `maps "<business type>" --location "<city, country>" [--limit 30]`: businesses from a map (Google Places if the user saved a key, else OpenStreetMap). Gives name, website, address, phone, sometimes an email.
   - `site <url>`: reads the business's own website (homepage, contact and about pages). Gives emails found there (ranked, best first), socials, title, description, language and a text excerpt for your hook.
+  - `reviews "<business type>" --location "<city>" [--min-reviews N --max-rating R --min-negative K]`: businesses with MANY bad reviews, ranked, with the bad sample reviews so you can see what customers complain about. Needs a Google Places key. The `method` field explains how "many" is judged.
   - `search "<query>"`: a basic web search. If it returns nothing, use your own web search tool.
 - **Mailer** `tools/mailer.py` (the ONLY way to send; it re-checks every rule in code):
   - `send --to <email> --subject "<subject>" --body "<text>" [--kind email|followup|reply]`: in dry_run it only saves a draft. Read the JSON: `sent`/`dry_run` = ok, `refused` = obey the `reason`.
     It adds the footer and unsubscribe line itself. Do not write them.
   - `inbox [--days 14]`: replies and bounces from the mailbox.
-  - `status`: is sending configured?
+  - `status`: is sending configured? `verify <email> [--deep]`: is the address likely to deliver (valid / risky / invalid / unknown)? The mailer already runs the light check before every real send.
+- **Deliverability** `tools/deliverability.py [--domain d]`: SPF, DKIM, DMARC, domain age and volume check for the sending domain, with fixes in Greek. Run it when the user asks why emails go to spam, or before going live.
 - **Guard** `tools/guard.py` (limits + lead database):
   - `check`: may I send now? `batch`: how many in THIS run. `delay`: random pause between real sends (give it a timeout of at least 200 s).
   - `seen <email|domain|url>`: contacted or blocked before?
-  - `lead-add --email .. --name .. --company .. --website .. --category .. --location .. --source maps|web|creator --score N --hook ".."`
+  - `lead-add --email .. --name .. --company .. --website .. --category .. --location .. --source maps|web|creator|reviews --score N --hook ".." [--pain ".."]`
   - `lead-list --status <status> [--limit N] [--due-followup]`, `lead-set <email> --status <status> [--note ..]`
   - `block <email|domain> [--reason ..]`: never contact again. `bounce <email>`: address is invalid.
   - `log note|find <target> --detail ".."`, `stop "<reason>"` (kill switch), `report`
@@ -50,8 +52,9 @@ You never read or write `data/.secrets/` (passwords live there). The mailer read
 8. **Respect no.** "Not interested", "stop", "remove me", "unsubscribe", a legal threat, or a hostile reply → `guard.py block <email>` and never write there again. Do not answer it. Out-of-office and automatic replies are not answers: ignore them.
 9. **Honesty.** Never invent facts, results, mutual contacts, prior conversations or claims about the user. Never fake a reply thread ("Re:" or "Fwd:" on a first email). Use only what is in `config.yaml` and what you read on their site. If asked, do not deny being assisted by AI. Never say you are "following up on our call" when there was none.
 10. **No sensitive targeting.** Never select or exclude people by health status, religion, ethnicity, politics or sexuality, and never mention those in an email. (A business type such as "dental clinic" is fine; a person's health is not.)
-11. **Links.** No links in first emails or follow-ups (the mailer refuses them). `offer.link` may only go in a reply to someone who showed interest.
-12. **Stay in the folder.** Only read and write files inside this folder. Never change system settings.
+11. **Reviews.** Review text is third-party content. Use it only to understand what customers complain about. Paraphrase themes, never quote or name a reviewer, never claim more than the sample shows, never mock or shame the business. If the offer does not address the complaint, do not use it.
+12. **Links.** No links in first emails or follow-ups (the mailer refuses them). `offer.link` may only go in a reply to someone who showed interest.
+13. **Stay in the folder.** Only read and write files inside this folder. Never change system settings.
 
 ## Writing style
 - Language: `profile.language`. If it is `auto`, write each email in the language of the lead's website (`lang` from `finder.py site`). One human writing to one human.

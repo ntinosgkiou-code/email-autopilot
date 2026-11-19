@@ -30,6 +30,10 @@ targeting:                    # who the agent looks for
   exclude_keywords: ["franchise", "public hospital", "university"]
   ideal_customer: "Describe the perfect lead in plain words. The agent scores every business 1-10 against this."
   min_fit_score: 7            # leads scoring below this are skipped
+  review_pain: false          # true = ALSO look for businesses with many bad reviews and use what their customers complain about as the reason to write (needs a Google Places key)
+  review_min_reviews: 30      # ignore businesses with fewer reviews than this (too little data)
+  review_max_rating: 4.1      # only businesses rated at or below this
+  review_min_negative: 15     # at least this many estimated bad reviews (3 stars or less) to count as "many"
 
 outreach:
   enabled: true

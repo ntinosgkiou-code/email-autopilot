@@ -14,3 +14,5 @@ data/reports/
 data/hot_leads.md
 .runlock
 __pycache__/
+data/cache/
+data/deliverability.json

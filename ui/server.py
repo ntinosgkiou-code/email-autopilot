@@ -29,6 +29,7 @@ UI = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "tools"))
 import guard  # noqa: E402  (shares the exact same rules, limits and files as the agent)
 import mailer  # noqa: E402
+import deliverability  # noqa: E402
 
 WIN = os.name == "nt"
 HOME = Path.home()
@@ -89,6 +90,8 @@ def _comment_start(s: str) -> int:
 
 
 def _fmt(v) -> str:
+    if isinstance(v, float):
+        return str(v)
     if isinstance(v, bool):
         return "true" if v else "false"
     if isinstance(v, int):
@@ -99,6 +102,11 @@ def _fmt(v) -> str:
 
 
 def _coerce(section: str, key: str, v, cur):
+    if key == "review_max_rating":
+        try:
+            return min(5.0, max(1.0, float(str(v).replace(",", "."))))
+        except ValueError:
+            return 4.1
     ref = cur.get(section, {}).get(key, guard.DEFAULTS.get(section, {}).get(key))
     if isinstance(ref, bool):
         return bool(v) if not isinstance(v, str) else v.lower() in ("1", "true", "yes", "on")
@@ -212,6 +220,7 @@ def state() -> dict:
         "leads": safe(lambda: guard.read_csv(guard.LEADS, guard.LEAD_FIELDS), [], "leads"),
         "log": safe(lambda: list(reversed(guard.read_csv(guard.LOG, guard.LOG_FIELDS)))[:150], [], "log"),
         "runs": safe(newest_logs, [], "runs"),
+        "deliv": safe(lambda: json.loads(deliverability.OUT.read_text(encoding="utf-8")) if deliverability.OUT.exists() else None, None, "deliv"),
         "secrets": {"password": bool(mailer.secrets().get("password")), "resend_key": bool(mailer.secrets().get("resend_key")),
                     "maps_key": bool(safe(lambda: __import__("finder").maps_key(), "", "maps"))},
         "checks": {"windows": WIN, "uv": which("uv"), "claude": which("claude"),
@@ -297,6 +306,10 @@ def action(a: dict) -> dict:
         return {"ok": True, "message": "Έγινε."}
     if t == "schedule":
         return install_schedule()
+    if t == "deliverability":
+        res = deliverability.run(guard.load_config())
+        guard._atomic_write(deliverability.OUT, json.dumps(res, ensure_ascii=False))
+        return {"ok": bool(res.get("ok")), "message": res.get("error") or f"Έλεγχος deliverability: {res['verdict']}"}
     if t == "email_test":
         to = guard.norm_email(guard.load_config()["email"].get("from_email", ""))
         return mailer.send_test(guard.load_config(), to) if to else {"ok": False, "message": "Βάλε πρώτα το Email αποστολής και πάτα Αποθήκευση."}

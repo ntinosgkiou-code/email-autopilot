@@ -30,7 +30,7 @@ BLOCK = DATA / "blocklist.txt"
 STOP = DATA / "STOP"
 REPORTS = DATA / "reports"
 
-LEAD_FIELDS = ["email", "name", "company", "website", "category", "location", "source", "fit_score", "hook",
+LEAD_FIELDS = ["email", "name", "company", "website", "category", "location", "source", "fit_score", "hook", "pain",
                "status", "added", "last_contact", "followups", "notes"]
 LOG_FIELDS = ["timestamp", "action", "target", "mode", "detail"]
 STATUSES = ["new", "emailed", "followed_up", "replied", "interested", "not_interested", "bounced", "skipped"]
@@ -348,7 +348,7 @@ def cmd_lead_add(a, cfg):
         return out({"added": False, "reason": "duplicate (same address or same company domain)"})
     rows.append({"email": e, "name": a.name or "", "company": a.company or "", "website": a.website or "",
                  "category": a.category or "", "location": a.location or "", "source": a.source or "",
-                 "fit_score": str(a.score or ""), "hook": a.hook or "", "status": "new",
+                 "fit_score": str(a.score or ""), "hook": a.hook or "", "pain": a.pain or "", "status": "new",
                  "added": now(cfg).strftime("%Y-%m-%d"), "last_contact": "", "followups": "0", "notes": ""})
     write_csv(LEADS, LEAD_FIELDS, rows)
     out({"added": True, "email": e, "total_leads": len(rows)})
@@ -563,7 +563,7 @@ def main():
     sub.add_parser("resume")
     s = sub.add_parser("seen"); s.add_argument("key")
     s = sub.add_parser("lead-add")
-    for f in ("email", "name", "company", "website", "category", "location", "source", "hook"):
+    for f in ("email", "name", "company", "website", "category", "location", "source", "hook", "pain"):
         s.add_argument("--" + f, required=(f == "email"))
     s.add_argument("--score", type=int)
     s = sub.add_parser("lead-list"); s.add_argument("--status", choices=STATUSES)

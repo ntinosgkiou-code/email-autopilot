@@ -8,6 +8,8 @@ An AI agent (Claude Code or Codex) that does cold email outreach for you, every 
 - **Reads their public website** and takes the business contact email that is published there. It never guesses addresses.
 - **Scores each lead 1–10** against your ideal customer and writes one **personalized email** per lead, based on a real detail from their site.
 - **Sends** within safe limits, **reads replies and bounces**, sends one polite follow-up, blocks anyone who says no.
+- **Review pain filter** (optional, needs a Google Places key): finds businesses with MANY bad reviews, judges "many" by estimated bad-review count and rating versus peers (not just a low star average), and summarizes what customers complain about or say is missing, so the email can address a real, specific problem. Details in "Review pain: how it judges" below.
+- **Address verification** before every real send (syntax, real mail servers, disposable and no-reply addresses) and a **deliverability check** of your sending domain (SPF, DKIM, DMARC, domain age, volume) with fixes in plain words.
 - **Safety in code, not just in prompts.** The mailer enforces the daily limit, work hours, a warm-up period, a blocklist, no repeat contact, no links in first emails, a footer with your identity and an unsubscribe line, and a kill switch that also trips on login failures or a bounce spike.
 
 ## Install (pick one)
@@ -55,6 +57,13 @@ A new mailbox that suddenly sends 100 cold emails a day goes to spam. Stay at 30
 - **Deliverability.** Use a mailbox on your own domain if you can, with SPF/DKIM set up. Do not use your main personal address for a first test of cold outreach.
 - **Maps data.** The free OpenStreetMap data has fewer small businesses than Google Maps. With a Google Places API key (official, pay-as-you-go, there is a free monthly credit) you get far more results.
 - **AI.** Emails are written by AI from public information. If a recipient asks, the agent does not deny it.
+
+## Review pain: how it judges
+Google's official API gives only an average rating, a review count and at most 5 sample reviews per place, never the full list. So:
+- **"Many bad reviews"** = an *estimated* number of reviews of 3 stars or less (review count × a share that grows as the rating falls: about 14% at 4.3 stars, 26% at 3.8, 40% at 3.2) of at least 15, a rating of 4.1 or lower, and clearly below the other places in the same search. All four numbers are editable in the dashboard.
+- **Few reviews don't count.** The rating is pulled toward the peer average when there are few reviews, so 6 reviews at 3.0 stars is not flagged.
+- **What they complain about** comes only from the (up to 5) sample reviews. With fewer than 2 bad sample reviews the agent writes no complaint theme and uses an ordinary hook.
+- **It is an estimate, not a count.** The agent never quotes or names a reviewer and never claims more than the sample shows. Scraping Google Maps pages is not used (it breaks Google's terms); the official key costs money per search (there is a free monthly credit).
 
 ## Where to look
 | File | What's in it |

@@ -32,7 +32,7 @@ log "START $TASK with $AGENT"
 if [ "$AGENT" = "claude" ]; then
   claude -p "$PROMPT" --permission-mode acceptEdits --max-turns 250 \
     --allowedTools "WebSearch" "WebFetch" "Bash(uv run tools/guard.py:*)" "Bash(uv run --quiet tools/guard.py:*)" \
-    "Bash(uv run tools/mailer.py:*)" "Bash(uv run --quiet tools/mailer.py:*)" "Bash(uv run tools/finder.py:*)" "Bash(uv run --quiet tools/finder.py:*)" \
+    "Bash(uv run tools/mailer.py:*)" "Bash(uv run --quiet tools/mailer.py:*)" "Bash(uv run tools/finder.py:*)" "Bash(uv run --quiet tools/finder.py:*)" "Bash(uv run tools/deliverability.py:*)" \
     "Read" "Glob" "Grep" "Edit(data/**)" >> "$LOG" 2>&1
 else
   codex exec --full-auto --skip-git-repo-check -c 'sandbox_workspace_write.network_access=true' "$PROMPT" >> "$LOG" 2>&1

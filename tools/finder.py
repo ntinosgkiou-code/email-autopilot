@@ -7,6 +7,7 @@
   uv run tools/finder.py maps "dentist" --location "Thessaloniki, Greece" [--limit 30]
   uv run tools/finder.py search "skincare brand founder Greece contact"           # web search (DuckDuckGo)
   uv run tools/finder.py site https://example.com                                  # emails, socials, what they do
+  uv run tools/finder.py reviews "restaurant" --location "Athens, Greece"          # businesses with MANY bad reviews + what customers complain about (needs a Google Places key)
 
 `maps` uses the official Google Places API when a key is saved (dashboard, "Google Maps key"), otherwise the free
 OpenStreetMap data (no key, good coverage of shops, clinics, restaurants, gyms, hotels; thinner for small niches).
@@ -341,14 +342,91 @@ def cmd_site(a):
          "socials": socials, "excerpt": re.sub(r"\s+", " ", body_text)[:1500], "pages_read": len(pages)})
 
 
+# ---------------------------------------------------------------- reviews: businesses with many bad reviews
+METHOD = ("Google gives each place an average rating, a review count and at most 5 sample reviews (no full distribution). "
+          "1) Peers = the other places in this same search. 2) Adjusted rating = the rating pulled toward the peer average, harder when there are few reviews (weight 15), "
+          "so 6 reviews at 3.0 stars is not treated like 300 reviews at 3.0. 3) Estimated bad reviews (3 stars or less) = review count x share, "
+          "share = 4% + 24% per star below 4.7 (typical J-shaped review curve: 4.3 stars is about 14%, 3.8 about 26%, 3.2 about 40%). A rough estimate, not a count. "
+          "4) 'Many' = at least min_negative estimated bad reviews AND rating at or below max_rating AND clearly below peers. "
+          "5) Evidence = how many of the 5 sample reviews are bad and have text: themes are only reliable when evidence is strong.")
+
+
+def neg_share(rating: float) -> float:
+    return max(0.02, min(0.7, 0.04 + (4.7 - rating) * 0.24))
+
+
+def score_places(places: list[dict], min_reviews: int = 30, max_rating: float = 4.1, min_negative: int = 15, prior: int = 15) -> list[dict]:
+    rated = [p for p in places if p.get("rating") and (p.get("reviews_count") or 0) >= 10]
+    peer = sum(p["rating"] for p in rated) / len(rated) if rated else 4.4
+    out_rows = []
+    for p in places:
+        r, n = p.get("rating"), int(p.get("reviews_count") or 0)
+        if not r or n <= 0:
+            continue
+        adj = (n * r + prior * peer) / (n + prior)
+        est = round(n * neg_share(r))
+        gap = round(peer - adj, 2)
+        sample = [x for x in p.get("sample_reviews", []) if (x.get("stars") or 5) <= 3 and (x.get("text") or "").strip()]
+        peers_ok = len(rated) >= 8
+        qualifies = n >= min_reviews and r <= max_rating and est >= min_negative and (gap >= 0.2 or not peers_ok)
+        row = {k: p.get(k) for k in ("name", "website", "address", "phone", "category", "maps_url")}
+        row.update({"rating": r, "reviews_count": n, "adjusted_rating": round(adj, 2), "peer_average": round(peer, 2), "gap_vs_peers": gap,
+                    "estimated_bad_reviews": est, "qualifies": qualifies, "pain_score": round(est * (1 + max(0, gap)), 1),
+                    "evidence": "strong" if len(sample) >= 2 else "weak" if sample else "none",
+                    "bad_sample_reviews": [{"stars": x["stars"], "when": x.get("when", ""), "text": x["text"][:500]} for x in sample]})
+        out_rows.append(row)
+    out_rows.sort(key=lambda x: (-x["qualifies"], -x["pain_score"]))
+    return out_rows
+
+
+def places_with_reviews(query: str, location: str, limit: int, key: str) -> list[dict]:
+    res: list[dict] = []
+    token = None
+    for _ in range(3):
+        body = {"textQuery": f"{query} in {location}", "pageSize": 20}
+        if token:
+            body["pageToken"] = token
+        txt, _ = http("https://places.googleapis.com/v1/places:searchText", json.dumps(body).encode(),
+                      {"Content-Type": "application/json", "X-Goog-Api-Key": key,
+                       "X-Goog-FieldMask": "places.displayName,places.websiteUri,places.formattedAddress,places.nationalPhoneNumber,"
+                                           "places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.googleMapsUri,places.reviews,nextPageToken"})
+        d = json.loads(txt)
+        for p in d.get("places", []):
+            res.append({"name": p.get("displayName", {}).get("text", ""), "website": p.get("websiteUri", ""), "address": p.get("formattedAddress", ""),
+                        "phone": p.get("nationalPhoneNumber", ""), "category": p.get("primaryTypeDisplayName", {}).get("text", ""),
+                        "rating": p.get("rating"), "reviews_count": p.get("userRatingCount"), "maps_url": p.get("googleMapsUri", ""),
+                        "sample_reviews": [{"stars": rv.get("rating"), "when": rv.get("relativePublishTimeDescription", ""),
+                                            "text": (rv.get("originalText") or rv.get("text") or {}).get("text", "")} for rv in p.get("reviews", [])]})
+        token = d.get("nextPageToken")
+        if not token or len(res) >= limit:
+            break
+    return res[:limit]
+
+
+def cmd_reviews(a):
+    key = maps_key()
+    if not key:
+        return out({"ok": False, "error": "This needs a Google Places API key (the free OpenStreetMap data has no reviews). Save it in the dashboard, Ρυθμίσεις section 3.",
+                    "hint": "Do not scrape Google Maps pages. Use the official key, or skip the review-pain filter."})
+    try:
+        places = places_with_reviews(a.query, a.location, a.limit, key)
+    except Exception as ex:  # noqa: BLE001
+        return out({"ok": False, "error": f"{type(ex).__name__}: {ex}", "hint": "403 = wrong key or Places API (New) not enabled."})
+    rows = score_places(places, a.min_reviews, a.max_rating, a.min_negative)
+    out({"ok": True, "searched": len(places), "qualifying": sum(1 for r in rows if r["qualifies"]), "method": METHOD,
+         "note": "Reviewer names are not included. Paraphrase themes, never quote or name anyone. Only claim what the bad_sample_reviews support.", "places": rows})
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("maps"); s.add_argument("query"); s.add_argument("--location", required=True); s.add_argument("--limit", type=int, default=30)
+    s = sub.add_parser("reviews"); s.add_argument("query"); s.add_argument("--location", required=True); s.add_argument("--limit", type=int, default=20)
+    s.add_argument("--min-reviews", type=int, default=30); s.add_argument("--max-rating", type=float, default=4.1); s.add_argument("--min-negative", type=int, default=15)
     s = sub.add_parser("search"); s.add_argument("query"); s.add_argument("--limit", type=int, default=10)
     s = sub.add_parser("site"); s.add_argument("url")
     a = ap.parse_args()
-    {"maps": cmd_maps, "search": cmd_search, "site": cmd_site}[a.cmd](a)
+    {"maps": cmd_maps, "search": cmd_search, "site": cmd_site, "reviews": cmd_reviews}[a.cmd](a)
 
 
 if __name__ == "__main__":

@@ -29,6 +29,16 @@ For each `targeting.creators` niche:
 2. Open the brand's website with `finder.py site <url>`. Accept only an email published on that site for business, collaboration or press enquiries. No email found → skip (never guess, never DM-scrape).
 3. Score, write the hook (a product, a recent launch, their brand story), `guard.py lead-add ... --source creator`.
 
+### 1c. Review pain (only if `targeting.review_pain` is true and a Google Places key is saved)
+Businesses with MANY bad reviews are the warmest leads when your offer fixes what customers complain about.
+1. For each `targeting.businesses` × `targeting.locations`: `finder.py reviews "<type>" --location "<location>" --min-reviews <review_min_reviews> --max-rating <review_max_rating> --min-negative <review_min_negative>`.
+   If it returns `ok:false`, skip this step (do not retry more than once, never scrape Google Maps pages).
+2. Take only places with `qualifies:true`, highest `pain_score` first. For each: skip if `seen`, excluded, or no website; get the email as in 1a.
+3. Read `bad_sample_reviews` and decide what customers actually ask for or say is missing. Write `--pain "<one sentence, paraphrased>"` (e.g. "several reviews mention phone calls going unanswered and long waits for an appointment").
+   Only write what the sample supports (`evidence: strong` = 2+ bad reviews with text). With `weak` or `none`, write `--pain ""` and use an ordinary hook: the low rating alone is not something you may claim a reason for.
+4. Only keep the lead if the pain is something the user's `offer` genuinely helps with (score the fit against `ideal_customer` AND the pain). Otherwise skip it.
+5. `guard.py lead-add ... --source reviews --pain "<sentence>" --hook "<site detail>"`. In the email, mention the pattern gently and honestly ("a few customers mention …"), after the site-specific detail. Never quote or name a reviewer, never say "your customers hate you", never make fun of the rating, never claim you read "all" reviews.
+
 Stop prospecting once you have added `2 × N` leads, or after reading about 40 websites in this run.
 
 ## 2. Send the emails (spend N)

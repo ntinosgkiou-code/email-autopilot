@@ -185,6 +185,10 @@ const FORM = [
     L('exclude_keywords','Να αποκλείονται','Π.χ. franchise, δημόσιο νοσοκομείο, ανταγωνιστής'),
     ['ideal_customer','Ο ιδανικός πελάτης με δικά σου λόγια','area','Ο βοηθός βαθμολογεί κάθε στόχο από 1 έως 10 σε σχέση με αυτό.'],
     ['min_fit_score','Πόσο αυστηρός να είναι','select',[['5','Χαλαρός (5+)'],['6','Μέτριος (6+)'],['7','Κανονικός (7+) ✔ προτείνεται'],['8','Αυστηρός (8+)'],['9','Πολύ αυστηρός (9+)']]],
+    ['review_pain','Να ψάχνει ΚΑΙ επιχειρήσεις με πολλές κακές κριτικές (χρειάζεται κλειδί Google Maps)','bool'],
+    ['review_min_reviews','Ελάχιστος αριθμός κριτικών','number','Επιχειρήσεις με λιγότερες κριτικές αγνοούνται (λίγα δεδομένα). Προτείνεται 30.'],
+    ['review_max_rating','Μέγιστη βαθμολογία (αστέρια)','text','Μόνο επιχειρήσεις με βαθμό ίσο ή χαμηλότερο, και αισθητά χαμηλότερο από τις υπόλοιπες της ίδιας αναζήτησης. Προτείνεται 4.1.'],
+    ['review_min_negative','Ελάχιστες εκτιμώμενες κακές κριτικές','number','«Πολλές» = τουλάχιστον τόσες κακές (3 αστέρια ή λιγότερο). Είναι εκτίμηση από βαθμό και πλήθος, όχι ακριβής μέτρηση. Προτείνεται 15.'],
     ['maps_key','Κλειδί Google Maps / Places API (προαιρετικό)','secret','Χωρίς κλειδί χρησιμοποιεί τον δωρεάν χάρτη OpenStreetMap (καλός για τα περισσότερα είδη). Με κλειδί παίρνει πολύ περισσότερα αποτελέσματα από το Google Maps.']]},
   { sec:'outreach', title:'4. Emails', fields:[
     ['enabled','Να στέλνει emails','bool'],
@@ -203,7 +207,8 @@ const FORM = [
     ['resend_key','Resend API key (αν επέλεξες Resend)','secret','Από resend.com. Αποθηκεύεται μόνο εδώ.'],
     ['footer','Υπογραφή / στοιχεία αποστολέα (ΥΠΟΧΡΕΩΤΙΚΟ για κανονική αποστολή)','area','Όνομα, εταιρεία και ταχυδρομική διεύθυνση. Ο νόμος (GDPR, CAN-SPAM) το απαιτεί σε κάθε εμπορικό email. Π.χ. «Γιώργος Παπαδόπουλος, Ran-Tevu, Εγνατίας 10, Θεσσαλονίκη»'],
     ['allow_freemail','Να επιτρέπονται διευθύνσεις τύπου @gmail.com','bool'],
-    ['_test','Δοκιμή σύνδεσης','test']]},
+    ['_test','Δοκιμή σύνδεσης','test'],
+    ['_deliv','Έλεγχος deliverability','deliv']]},
   { sec:'limits', title:'6. Ασφάλεια και ώρες', fields:[
     ['preset','Γρήγορη επιλογή (γεμίζει τα νούμερα από κάτω, μετά τα αλλάζεις όπως θες)','preset'],
     ['emails_per_day','Emails τη μέρα','number','Μέγιστο 100. Για καινούργιο email, κάτω από 40 είναι ασφαλές.'],
@@ -223,6 +228,13 @@ function field(sec, f) {
   if (type === 'bool') return `<label class="chk" style="margin:12px 0"><input type="checkbox" id="${id}" ${v ? 'checked' : ''}> <b>${label}</b></label><br>`;
   let inp = '';
   if (type === 'secret') { const have = (S.secrets || {})[k]; inp = `<input type="password" id="${id}" autocomplete="new-password" placeholder="${have ? '•••••••• αποθηκευμένο (άφησέ το κενό για να μείνει)' : 'δεν έχει οριστεί'}">`; }
+  else if (type === 'deliv') {
+    const d = S.deliv, ic = { pass:'✅', warn:'⚠️', fail:'❌' };
+    return `<div class="card" style="margin:14px 0;background:#f8fafc"><h3>Έλεγχος deliverability (SPF, DKIM, DMARC)</h3><p class="small" style="margin:0 0 8px">Ελέγχει αν το domain του email σου είναι σωστά στημένο ώστε τα emails να μην πηγαίνουν στα spam. Δεν στέλνει τίποτα.</p>
+      <button class="btn alt sm" onclick="act({do:'deliverability'},this)">🔎 Έλεγξε τώρα</button>
+      ${d && d.items && d.items.length ? `<p style="margin:12px 0 4px"><b>${esc(d.domain || '')}: ${esc(d.verdict || '')}</b> <span class="small">(${esc(d.checked || '')})</span></p>` + d.items.map(i => `<div style="margin:6px 0">${ic[i.status] || '•'} <b>${esc(i.title)}</b> <span class="small">${esc(i.detail)}</span>${i.fix ? `<div class="small" style="margin-left:24px">➜ ${esc(i.fix)}</div>` : ''}</div>`).join('') : ''}
+      ${d && d.error ? `<p class="small">${esc(d.error)}</p>` : ''}</div>`;
+  }
   else if (type === 'test') return `<div class="row" style="margin:14px 0"><button class="btn alt" onclick="testEmail(this)">✉️ Στείλε δοκιμαστικό email στον εαυτό μου</button><span class="small">Πρώτα πάτα «Αποθήκευση» πιο κάτω.</span></div>`;
   else if (type === 'text') inp = `<input type="text" id="${id}" value="${esc(v)}">`;
   else if (type === 'time') inp = `<input type="text" id="${id}" value="${esc(v)}" placeholder="08:30" style="max-width:140px">`;
@@ -252,7 +264,7 @@ async function saveSettings(btn) {
     values[g.sec] = values[g.sec] || {};
     for (const [k, , type] of g.fields) {
       const id = `f_${g.sec}_${k}`;
-      if (type === 'preset' || type === 'test') continue;
+      if (type === 'preset' || type === 'test' || type === 'deliv') continue;
       const el = document.getElementById(id); if (!el) continue;
       if (type === 'secret') { if (el.value.trim()) secrets[k] = el.value.trim(); continue; }
       let v;
@@ -301,7 +313,7 @@ const ST = { new:'Νέος', emailed:'Email στάλθηκε', followed_up:'Υπ
 function leads() {
   if (!S.leads.length) return `<h2>Επαφές</h2><div class="card empty">Δεν υπάρχουν επαφές ακόμα. Πάτα «Δοκιμή τώρα» στην Αρχική.</div>`;
   const rows = [...S.leads].sort((a, b) => (b.fit_score | 0) - (a.fit_score | 0)).map(l => `<tr><td><b>${esc(l.name || l.company || l.email)}</b><br><span class="small">${esc(l.email)}</span>${l.website ? `<br><a class="small" href="${esc(l.website)}" target="_blank" rel="noopener">${esc(l.website.replace(/^https?:\/\//, ''))}</a>` : ''}</td>
-    <td class="small">${esc(l.category)}<br>${esc(l.location)}</td><td><b>${esc(l.fit_score)}</b>/10</td><td class="small">${esc(l.hook)}</td><td><span class="tag t-${l.status}">${ST[l.status] || l.status}</span></td></tr>`).join('');
+    <td class="small">${esc(l.category)}<br>${esc(l.location)}</td><td><b>${esc(l.fit_score)}</b>/10</td><td class="small">${esc(l.hook)}${l.pain ? `<br><b>Παράπονα πελατών:</b> ${esc(l.pain)}` : ''}</td><td><span class="tag t-${l.status}">${ST[l.status] || l.status}</span></td></tr>`).join('');
   return `<h2>Επαφές (${S.leads.length})</h2><p class="sub">Όσους βρήκε ο βοηθός, με βαθμό καταλληλότητας και τον λόγο που θα τους γράψει.</p><div class="tw"><table><tr><th>Επιχείρηση / δημιουργός</th><th>Είδος</th><th>Βαθμός</th><th>Αφορμή</th><th>Κατάσταση</th></tr>${rows}</table></div>`;
 }
 const ACT = { email:'Πρώτο email', followup:'Υπενθύμιση', reply:'Απάντηση', bounce:'Αποτυχία διεύθυνσης', stop:'ΣΤΟΠ', block:'Αποκλεισμός' };
